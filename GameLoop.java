@@ -16,12 +16,14 @@ public class GameLoop extends AnimationTimer {
     private Explosion explosion;
     private final SpaceInvadersApplication gameApp;
     private boolean isRespawning = false; // Flag to prevent multiple respawn attempts
+    private List<Block> walls;
     
-    public GameLoop(Player player, List<Bullet> bullets, List<Invader> invaders, Pane root, SpaceInvadersApplication gameApp) {
+    public GameLoop(Player player, List<Bullet> bullets, List<Invader> invaders, Pane root, SpaceInvadersApplication gameApp, List<Block> walls) {
         this.player = player;
         this.bullets = bullets;
         this.invaders = invaders; // Store invaders
         this.root = root;
+        this.walls = walls;
         this.gameApp = gameApp;
         explosion = new Explosion();
         scoreLabel = new Label("Score: " + score);
@@ -76,8 +78,34 @@ public class GameLoop extends AnimationTimer {
                 }
             }
         }
-        
+         bulletIterator = bullets.iterator();
+         while (bulletIterator.hasNext()) {
+             Bullet bullet = bulletIterator.next();
+             Iterator<Block> wallIterator = walls.iterator();
+             while (wallIterator.hasNext()) {
+                 Block wall = wallIterator.next();
+                 if(wall.getAlive()==false){
+                         root.getChildren().removeAll(wall.getSprite());
+                         wallIterator.remove();
+                     }
+                 if (bullet.collidesWith(wall)) {
+                     
+                     System.out.println(bullet.collidesWith(wall));
+                     
+                     bullet.setAlive(false);
+                     wall.update();
+                     explosion.playExplosion(root, bullet.getX(), bullet.getY());      
+ 
+                     // Remove from scene
+                     root.getChildren().removeAll(bullet.getSprite());
+ 
+                     // Remove from lists
+                     bulletIterator.remove();
+                     break;
     }
+}
+}
+}
     
     private void removeOffscreenBullets() {
         Iterator<Bullet> bulletIterator = bullets.iterator();

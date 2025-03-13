@@ -32,6 +32,7 @@ public class SpaceInvadersApplication extends Application {
     private MenuBar menuBar;
     private int score = 0; //intial score is 0
     private Label scoreLabel; 
+     private List<Block> walls = new ArrayList<>();
 
     @Override
     public void start(Stage stage) {
@@ -99,10 +100,10 @@ public class SpaceInvadersApplication extends Application {
 
         // Spawn invaders
         spawnInvaders();
-        
+        spawnWalls();
 
         // Game loop and player movement control
-        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, this) {
+        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, this, walls) {
             @Override
             public void handle(long now) {
                 // Handle player movement
@@ -168,7 +169,18 @@ public class SpaceInvadersApplication extends Application {
         scoreLabel.setText("Score: " + score);  
     }
 
-
+    
+    private void spawnWalls(){
+         int row = 600;
+         Block wall;
+         for(int col = 1; col < 9; col += 2){
+         wall = new Block(90*col, row);
+         walls.add(wall);
+         gamePane.getChildren().add(wall.getSprite());
+         }
+        
+     }
+     
     public static void main(String[] args) {
         launch(args);
     }
