@@ -24,7 +24,9 @@ public class SpaceInvadersApplication extends Application {
     private final Pane gamePane = new Pane();
     private Player player;
     private final List<Bullet> bullets = new ArrayList<>();
-    private final List<Invader> invaders = new ArrayList<>(); // Add Invaders list
+    private final List<Invader> invaders = new ArrayList<>();// Add Invaders list
+    
+    private List<Block> walls = new ArrayList<>();
     
     private final Set<KeyCode> activeKeys = new HashSet<>();
     private BorderPane root;
@@ -96,9 +98,12 @@ public class SpaceInvadersApplication extends Application {
 
         // Spawn invaders
         spawnInvaders();
+        
+        //Spawn walls
+        spawnWalls();
 
         // Game loop and player movement control
-        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane) {
+        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, walls) {
             @Override
             public void handle(long now) {
                 // Handle player movement
@@ -144,6 +149,7 @@ public class SpaceInvadersApplication extends Application {
             }
         }
     }
+    
 
     private void menuBarDropDown() {
     menuBar.setTranslateY(-30); 
@@ -158,7 +164,17 @@ public class SpaceInvadersApplication extends Application {
         }
     });
     }
-
+    
+    private void spawnWalls(){
+        int row = 600;
+        Block wall;
+        for(int col = 1; col < 9; col += 2){
+        wall = new Block(90*col, row);
+        walls.add(wall);
+        gamePane.getChildren().add(wall.getSprite());
+        }
+       
+    }
 
 
     public static void main(String[] args) {
