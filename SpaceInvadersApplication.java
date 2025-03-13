@@ -10,7 +10,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
+import javafx.scene.control.Label;  
+import javafx.scene.paint.Color;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +25,13 @@ public class SpaceInvadersApplication extends Application {
     private final Pane gamePane = new Pane();
     private Player player;
     private final List<Bullet> bullets = new ArrayList<>();
-    private final List<Invader> invaders = new ArrayList<>();// Add Invaders list
-    
-    private List<Block> walls = new ArrayList<>();
+    private final List<Invader> invaders = new ArrayList<>(); // Add Invaders list
     
     private final Set<KeyCode> activeKeys = new HashSet<>();
     private BorderPane root;
     private MenuBar menuBar;
+    private int score = 0; //intial score is 0
+    private Label scoreLabel; 
 
     @Override
     public void start(Stage stage) {
@@ -99,11 +100,9 @@ public class SpaceInvadersApplication extends Application {
         // Spawn invaders
         spawnInvaders();
         
-        //Spawn walls
-        spawnWalls();
 
         // Game loop and player movement control
-        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, walls) {
+        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, this) {
             @Override
             public void handle(long now) {
                 // Handle player movement
@@ -127,7 +126,7 @@ public class SpaceInvadersApplication extends Application {
         gamePane.getChildren().add(bullet.getSprite());
     }
 
-    private void spawnInvaders() {
+    public void spawnInvaders() {
         int rows = 3;
         int cols = 8;
         int startX = 100;
@@ -149,31 +148,24 @@ public class SpaceInvadersApplication extends Application {
             }
         }
     }
-    
 
     private void menuBarDropDown() {
-    menuBar.setTranslateY(-30); 
-
-    root.setOnMouseMoved(e -> {
-        if (e.getY() <= 50) {
-            TranslateTransition slideDown = new TranslateTransition(Duration.seconds(0.1), menuBar);
-            slideDown.setToY(0); 
-            slideDown.play();
-        } else {
-            menuBar.setTranslateY(-30); 
-        }
-    });
+        menuBar.setTranslateY(-30); 
+    
+        root.setOnMouseMoved(e -> {
+            if (e.getY() <= 50) {
+                TranslateTransition slideDown = new TranslateTransition(Duration.seconds(0.1), menuBar);
+                slideDown.setToY(0); 
+                slideDown.play();
+            } else {
+                menuBar.setTranslateY(-30); 
+            }
+        });
     }
     
-    private void spawnWalls(){
-        int row = 600;
-        Block wall;
-        for(int col = 1; col < 9; col += 2){
-        wall = new Block(90*col, row);
-        walls.add(wall);
-        gamePane.getChildren().add(wall.getSprite());
-        }
-       
+     public void updateScore() {
+        score += 100;  
+        scoreLabel.setText("Score: " + score);  
     }
 
 
