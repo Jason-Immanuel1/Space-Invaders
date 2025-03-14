@@ -170,9 +170,11 @@ public class SpaceInvadersApplication extends Application {
     }
     
     private void fireBullet() {
+        if(bullets.size()<4 ){
         Bullet bullet = new Bullet(player.getX() + 20, player.getY() - 10);
         bullets.add(bullet);
         gamePane.getChildren().add(bullet.getSprite());
+        }
     }
 
     public void spawnInvaders() {

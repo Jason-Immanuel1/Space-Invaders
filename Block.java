@@ -5,7 +5,6 @@ import java.util.Objects;
 
 public class Block extends Invader
 {
-    //4 hits till death
     private int stage;
     
     public Block(int x, int y){
@@ -17,18 +16,19 @@ public class Block extends Invader
         // Ensure hit box matches sprite size
         this.hitbox.setWidth(this.sprite.getImage().getWidth());
         this.hitbox.setHeight(this.sprite.getImage().getHeight());
-
-        System.out.println(this.sprite.getImage().getWidth() + " " + this.sprite.getImage().getHeight());
+        
         this.value = 0;
-
     }
+    
     public void update(){
         stage += 1;
         if (stage > 4){
             setAlive(false);
+            this.sprite.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/sprites/blank.png"))));
         }
-        String toGet = "/sprites/wall" + stage + ".png";
-        this.sprite.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream(toGet))));
-        
+        else{
+            String toGet = "/sprites/wall" + stage + ".png";
+            this.sprite.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream(toGet))));
+        }
     }
 }
