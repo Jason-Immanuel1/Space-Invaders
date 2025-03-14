@@ -121,7 +121,54 @@ public class SpaceInvadersApplication extends Application {
         
         return gamePane;
     }
-
+    
+    /**
+     * Called when life count is set to 0. restarts oprignial gamew
+     */
+    public void restartGame() {
+        gamePane.getChildren().clear(); //clear all elements
+        
+        // Reload the background
+        InputStream inputStream = getClass().getResourceAsStream("/sprites/spaceinvadersbackground.png");
+        assert inputStream != null;
+        Image bgImage = new Image(inputStream);
+        ImageView bgView = new ImageView(bgImage);
+        bgView.setFitWidth(WIDTH);
+        bgView.setFitHeight(HEIGHT);
+        gamePane.getChildren().add(bgView);
+        
+        // Reset collections
+        bullets.clear();
+        invaders.clear();
+        walls.clear();
+        
+        // Reinitialize player
+        player = new Player(300, 300);
+        player.setX((double) WIDTH / 2 - 25); // Center horizontally
+        player.setY(HEIGHT - 100);   // Place near bottom
+        gamePane.getChildren().add(player.getSprite());
+        
+        // Spawn new invaders and walls
+        spawnInvaders();
+        spawnWalls();
+        
+        // Create and start a new game loop
+        GameLoop gameLoop = new GameLoop(player, bullets, invaders, gamePane, this, walls, SCREEN_WIDTH) {
+            @Override
+            public void handle(long now) {
+                // Handle player movement
+                if (activeKeys.contains(KeyCode.LEFT) || activeKeys.contains(KeyCode.A)) {
+                    player.moveLeft();
+                }
+                if (activeKeys.contains(KeyCode.RIGHT) || activeKeys.contains(KeyCode.D)) {
+                    player.moveRight();
+                }
+                super.handle(now);
+            }
+        };
+        gameLoop.start();
+    }
+    
     private void fireBullet() {
         Bullet bullet = new Bullet(player.getX() + 20, player.getY() - 10);
         bullets.add(bullet);
