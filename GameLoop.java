@@ -1,7 +1,17 @@
+ 
+
 import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.util.Duration;
+
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javafx.scene.control.Label;
@@ -9,80 +19,135 @@ import javafx.scene.control.Label;
 public class GameLoop extends AnimationTimer {
     private final Player player;
     private final List<Bullet> bullets;
-    private final List<Invader> invaders; // Add invaders list
+    private final List<Invader> invaders; // Add the invader list
     private final Pane root;
     private int score = 0;  // Initialize score to 0
-    private Label scoreLabel;
     private int lives = 3; // Initialize lives to 3
-    private Label livesLabel;
-    private int round = 1; //intialise round to 1
-    private Label roundLabel;
-    private Explosion explosion;
+    private int round = 1; //initialise round to 1
+    private final Explosion explosion;
     private final SpaceInvadersApplication gameApp;
     private boolean isRespawning = false; // Flag to prevent multiple respawn attempts
-    private List<Block> walls;
+    private final List<Shield> walls;
     private long lastInvaderUpdate = 0;
-    private final long INVADER_UPDATE_INTERVAL_1 = 200_000_000; //timings in which aliens can move
-    private final long INVADER_UPDATE_INTERVAL_2 = 150_000_000;
-    private final long INVADER_UPDATE_INTERVAL_3 = 100_000_000;
-    private final long INVADER_UPDATE_INTERVAL_4 = 50_000_000;
     private boolean shouldMoveDown = false;
     private boolean groupMovingRight = true;
     private final double SCREEN_WIDTH;
-    private double dangerZoneY = 700;
-    private GameMenu gameMenu;
-    
-    public GameLoop(Player player, List<Bullet> bullets, List<Invader> invaders, Pane root, SpaceInvadersApplication gameApp, List<Block> walls, double screenWidth, GameMenu gameMenu) {
+    List<ImageView> hearts;
+    Image hollowHeartImage;
+
+    private Text roundText;
+    private Text scoreText;
+    private Text livesText;
+
+    public GameLoop(Player player, List<Bullet> bullets, List<Invader> invaders, Pane root, SpaceInvadersApplication gameApp, List<Shield> walls, double screenWidth) {
         this.player = player;
         this.bullets = bullets;
-        this.invaders = invaders; // Store invaders
+        this.invaders = invaders;
         this.root = root;
         this.walls = walls;
         this.gameApp = gameApp;
-        this.gameMenu = gameMenu;
         this.SCREEN_WIDTH = screenWidth;
+
+        Font font;
+
+        try (InputStream fontStream = StartMenu.class.getResourceAsStream("/fonts/PressStart2P.ttf")) {
+            if (fontStream != null) {
+                font = Font.loadFont(fontStream, 20);
+            } else {
+                throw new RuntimeException("Font not found!");
+            }
+        } catch (Exception e) {
+            font = Font.font("Arial", 20); // Fallback font
+        }
+
+        // Load full heart image
+        InputStream heartStream = StartMenu.class.getResourceAsStream("/sprites/heart/heart.png");
+        if (heartStream == null) {
+            throw new RuntimeException("Heart image not found!");
+        }
+        Image heartImage = new Image(heartStream);
+
+        // Load hollow heart image
+        InputStream hollowHeartStream = StartMenu.class.getResourceAsStream("/sprites/heart/hollow_heart.png"); // Ensure you have this image!
+        if (hollowHeartStream == null) {
+            throw new RuntimeException("Hollow heart image not found!");
+        }
+        hollowHeartImage = new Image(hollowHeartStream); // Correct usage
+
+        // Create ImageView objects for the hearts
+        ImageView heart1 = new ImageView(heartImage);
+        ImageView heart2 = new ImageView(heartImage);
+        ImageView heart3 = new ImageView(heartImage);
+
+        int heartSize = 45;
+
+        // Set heart sizes
+        heart1.setFitWidth(heartSize);
+        heart1.setFitHeight(heartSize);
+        heart2.setFitWidth(heartSize);
+        heart2.setFitHeight(heartSize);
+        heart3.setFitWidth(heartSize);
+        heart3.setFitHeight(heartSize);
+
+        // Position the hearts
+        double heartSpacing = 40;
+        double heartY = 0;
+        heart1.setTranslateX(700);
+        heart1.setTranslateY(heartY);
+        heart2.setTranslateX(700 + heartSpacing);
+        heart2.setTranslateY(heartY);
+        heart3.setTranslateX(700 + 2 * heartSpacing);
+        heart3.setTranslateY(heartY);
+
+        // Store hearts in a list
+        hearts = new ArrayList<>(List.of(heart1, heart2, heart3));
+
+        // Set initial lives
+        lives = hearts.size();
+
+        // Initialize explosion
         explosion = new Explosion();
-        scoreLabel = new Label("Score: " + score);
-        scoreLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
-        scoreLabel.setTranslateX(10); 
-        scoreLabel.setTranslateY(10);
-        root.getChildren().add(scoreLabel); 
-        livesLabel = new Label("Lives: " + lives);
-        livesLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
-        livesLabel.setTranslateX(10);
-        livesLabel.setTranslateY(40); 
-        root.getChildren().add(livesLabel);
-        roundLabel = new Label("Round: " + round);
-        roundLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
-        roundLabel.setTranslateX(10);
-        roundLabel.setTranslateY(70);
-        root.getChildren().add(roundLabel); 
+
+        // Create and style game info text
+        roundText = new Text("Round: " + round);
+        scoreText = new Text("Score: " + score);
+        livesText = new Text("Lives: ");
+
+        roundText.setFont(font);
+        scoreText.setFont(font);
+        livesText.setFont(font);
+
+        roundText.setFill(Color.WHITE);
+        scoreText.setFill(Color.WHITE);
+        livesText.setFill(Color.WHITE);
+
+        roundText.setStyle("-fx-font-weight: bold;");
+        scoreText.setStyle("-fx-font-weight: bold;");
+        livesText.setStyle("-fx-font-weight: bold;");
+
+        // Position text elements
+        roundText.setTranslateX(10);
+        roundText.setTranslateY(30);
+
+        scoreText.setTranslateX(300);
+        scoreText.setTranslateY(30);
+
+        livesText.setTranslateX(575);
+        livesText.setTranslateY(30);
+
+        // Add elements to root
+        root.getChildren().addAll(roundText, scoreText, livesText);
+        root.getChildren().addAll(heart1, heart2, heart3);
     }
     
     @Override
     public void handle(long now) {
         updatePlayer();
         updateBullets();
-        
-        
-        int currentRound = getRound();
-        long invaderUpdateInterval;
-        
-        if (gameMenu != null && gameMenu.isPaused()) {
-            return;
-        }
-    
-        //higher round, aliens move faster
-        if (currentRound == 1) {
-            invaderUpdateInterval = INVADER_UPDATE_INTERVAL_1;
-        } else if (currentRound == 2) {
-            invaderUpdateInterval = INVADER_UPDATE_INTERVAL_2;
-        } else if (currentRound == 3) {
-            invaderUpdateInterval = INVADER_UPDATE_INTERVAL_3;
-        } else {
-            invaderUpdateInterval = INVADER_UPDATE_INTERVAL_4;
-        }
-    
+
+
+        long invaderUpdateInterval = getInvaderUpdateInterval();
+
         if (now - lastInvaderUpdate >= invaderUpdateInterval) {
             updateInvaders();
             lastInvaderUpdate = now;
@@ -103,7 +168,25 @@ public class GameLoop extends AnimationTimer {
         }
     }
 
-    
+    private long getInvaderUpdateInterval() {
+        int currentRound = getRound();
+        long invaderUpdateInterval;
+
+        // change delay between movement based off round, higher round moves faster
+        if (currentRound == 1) {
+            //timings in which aliens can move
+            invaderUpdateInterval = 1000_000_000;
+        } else if (currentRound == 2) {
+            invaderUpdateInterval = 150_000_000;
+        } else if (currentRound == 3) {
+            invaderUpdateInterval = 100_000_000;
+        } else {
+            invaderUpdateInterval = 50_000_000;
+        }
+        return invaderUpdateInterval;
+    }
+
+
     private void updateInvaders() {
         // Check if any invader is at the edge
         checkInvaderBoundaries();
@@ -120,9 +203,10 @@ public class GameLoop extends AnimationTimer {
             invader.update();
         }
         
+        // Reset the moveDown flag after processing
         if (shouldMoveDown) {
             shouldMoveDown = false;
-            groupMovingRight = !groupMovingRight; // Change direction after moving down
+            groupMovingRight = !groupMovingRight; // Change the direction after moving down
         }
     }
     
@@ -178,8 +262,9 @@ public class GameLoop extends AnimationTimer {
                 bullet.setAlive(false);
                 invader.setAlive(false);
                 
-                explosion.playExplosion(root, invader.getX(), invader.getY());      
-                // Remove from scene
+                explosion.playExplosion(root, invader.getX(), invader.getY());
+                
+                // Remove from the scene
                 root.getChildren().removeAll(bullet.getSprite(), invader.getSprite());
                 // Remove from lists
                 bulletIterator.remove();
@@ -194,9 +279,9 @@ public class GameLoop extends AnimationTimer {
     Iterator<Bullet> bulletIterator2 = bullets.iterator();
     while (bulletIterator2.hasNext()) {
         Bullet bullet = bulletIterator2.next();
-        Iterator<Block> wallIterator = walls.iterator();
+        Iterator<Shield> wallIterator = walls.iterator();
         while (wallIterator.hasNext()) {
-            Block wall = wallIterator.next();
+            Shield wall = wallIterator.next();
             if (!wall.getAlive()) {
                 root.getChildren().removeAll(wall.getSprite());
                 wallIterator.remove();
@@ -204,9 +289,9 @@ public class GameLoop extends AnimationTimer {
             if (bullet.collidesWith(wall)) {
                 bullet.setAlive(false);
                 wall.update();
-                explosion.playExplosion(root, bullet.getX(), bullet.getY());      
+                explosion.playExplosion(root, bullet.getX(), wall.getY());      
 
-                // Remove from scene
+                // Remove from the scene
                 root.getChildren().removeAll(bullet.getSprite());
 
                 // Remove from lists
@@ -217,32 +302,30 @@ public class GameLoop extends AnimationTimer {
     }
 
     // Invader-Wall Collision
-    Iterator<Invader> invaderIterator2 = invaders.iterator();
-    while (invaderIterator2.hasNext()) {
-        Invader invader = invaderIterator2.next();
-        Iterator<Block> wallIterator = walls.iterator();
-        while (wallIterator.hasNext()) {
-            Block wall = wallIterator.next();
-            if (invader.collidesWith(wall)) {
-                wall.update(); // Damage the wall
-                if (!wall.getAlive()) { // If the wall is destroyed
-                    root.getChildren().removeAll(wall.getSprite());
-                    wallIterator.remove();
+        for (Invader invader : invaders) {
+            Iterator<Shield> wallIterator = walls.iterator();
+            while (wallIterator.hasNext()) {
+                Shield wall = wallIterator.next();
+                if (invader.collidesWith(wall)) {
+                    wall.update(); // Damage the wall
+                    if (!wall.getAlive()) { // If the wall is destroyed
+                        root.getChildren().removeAll(wall.getSprite());
+                        wallIterator.remove();
+                    }
+                    loseLife();
+                    clearAllInvaders();
+                    spawnNewWave(true);
+                    return;
                 }
-                loseLife();
-                clearAllInvaders();
-                spawnNewWave(true);
-                return; 
             }
         }
-    }
     
     Iterator<Bullet> bulletIterator3 = bullets.iterator();
     while(bulletIterator3.hasNext()){
         Bullet bullet = bulletIterator3.next();
         if(bullet.isAlienShot() && bullet.collidesWith(player)){
             loseLife();
-
+            explosion.playExplosion(root, bullet.getX(), bullet.getY());
             clearAllInvaders();
             spawnNewWave(true);
             bullet.setAlive(false);
@@ -256,7 +339,8 @@ public class GameLoop extends AnimationTimer {
     
     
      for (Invader invader : invaders) {
-        if (invader.getY() >= dangerZoneY) {
+         double dangerZoneY = 750;
+         if (invader.getY() >= dangerZoneY) {
             loseLife();
             clearAllInvaders();
             spawnNewWave(true);
@@ -283,26 +367,32 @@ public class GameLoop extends AnimationTimer {
             }
         }
     }
-    
+
     private void clearAllInvaders() {
         for (Invader invader : invaders) {
             root.getChildren().remove(invader.getSprite());
         }
         invaders.clear();
     }
-    
+
     private void loseLife() {
-        lives--; 
-        livesLabel.setText("Lives: " + lives); 
-        
-        if (lives <= 0) {
-            gameOver();
+        if (lives > 0) {
+            lives--;
+
+            // Swap full heart to hollow heart
+            if (lives < hearts.size()) {
+                hearts.get(lives).setImage(hollowHeartImage);
+            }
+
+            // Check for game over
+            if (lives == 0) {
+                gameOver();
+            }
         }
-        
-    }    
+    }
     
     /**
-     * Stope the game when live count reaches 0
+     * Stop the game when live count reaches 0
      */
     private void gameOver() {
         this.stop();
@@ -327,15 +417,15 @@ public class GameLoop extends AnimationTimer {
     }
     
     /**
-     * popints scored for killing aliens
+     * points scored for killing aliens
      */
     private void updateScore() {
-        score += 100;  // Increase score by 100 per alien killed
-        scoreLabel.setText("Score: " + score);  // Update the displayed score
+        score += 100;  // Increase the score by 100 per alien killed
+        scoreText.setText("Score: " + score);  // Update the displayed score
     }
     
     /**
-     * Re-intialised original variable values
+     * Re-initialized original variable values
      */
     private void restartGame() {
         lives = 3;
@@ -346,20 +436,20 @@ public class GameLoop extends AnimationTimer {
         invaders.clear();
         walls.clear();
         
-        livesLabel.setText("Lives: " + lives);
-        scoreLabel.setText("Score: " + score);
-        roundLabel.setText("Round: " + round);
+        livesText.setText("Lives: " + lives);
+        scoreText.setText("Score: " + score);
+        roundText.setText("Round: " + round);
         
         gameApp.restartGame();
     }
     
     private void spawnNewWave(boolean isWallCollision) {
         isRespawning = true; 
-        PauseTransition pause = new PauseTransition(Duration.seconds(1.5)); // 1.5 second delay before respawning aliens
+        PauseTransition pause = new PauseTransition(Duration.seconds(1.5)); // 1.5-second delay before respawning aliens
         pause.setOnFinished(event -> {
             if (!isWallCollision) {
                 round++;  // Only increment round if it's not due to a wall collision
-                roundLabel.setText("Round: " + round); 
+                roundText.setText("Round: " + round);
             }
             gameApp.spawnInvaders();
             isRespawning = false; // Reset flag after respawning, stops multiple respawns
